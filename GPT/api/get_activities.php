@@ -107,7 +107,7 @@ $response = curl_exec($ch);
 if ($response === false) {
     $error_msg = curl_error($ch);
     http_response_code(500);
-    echo json_encode(["error" => "Erreur cURL", "details" => $error_msg]);
+    echo json_encode(["error" => "Erreur cURL 2", "details" => $error_msg]);
     curl_close($ch);
     exit();
 }

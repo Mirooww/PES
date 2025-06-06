@@ -14,7 +14,7 @@ npm run dev
 
 Attention aux problèmes de CORS en local
 
-Test fonctionnel sur : https://je-code.com/sep/GPTVite/
+Test fonctionnel sur : https://localhost:8000/sep/GPTVite/
 
 ## Présentation
 

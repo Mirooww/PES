@@ -27,7 +27,7 @@ export const fetchActivities = async (
       userInfo,
     };
 
-    const response = await fetch('http://localhost:8738/getActivitiesGoogle.php', {
+    const response = await fetch('http://localhost:8738/getActivities.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
