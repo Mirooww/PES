@@ -33,11 +33,6 @@ $south = $input['south'] ?? null;
 $east = $input['east'] ?? null;
 $west = $input['west'] ?? null;
 
-if (!$userLatitude || !$userLongitude || !$north || !$south || !$east || !$west) {
-    http_response_code(400);
-    echo json_encode(["error" => "Latitude, longitude et les limites de la carte sont requis."]);
-    exit();
-}
 
 $userInfo = $input['userInfo'] ?? [];
 $ability = $userInfo['ability'] ?? "aucune capacité spécifiée";
@@ -56,10 +51,10 @@ $prompt = "Génère une liste de 5 activités adaptées pour une personne ayant 
 Assure-toi que la sortie est uniquement le JSON sans texte supplémentaire.";
 
 $maxTokens = 1500;
-$apiUrl = 'https://api.openai.com/v1/chat/completions';
+$apiUrl = 'http://localhost:11434/api/chat';
 
 $requestData = [
-    "model" => "gpt-3.5-turbo",
+    "model" => "llama3.2:1b",
     "messages" => [
         [
             "role" => "system",
@@ -85,10 +80,10 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
 
 $response = curl_exec($ch);
-
+var_dump($response);
 if ($response === false) {
     http_response_code(500);
-    echo json_encode(["error" => "Erreur cURL", "details" => curl_error($ch)]);
+    echo json_encode(["error" => "Erreur cURL 1", "details" => curl_error($ch)]);
     curl_close($ch);
     exit();
 }

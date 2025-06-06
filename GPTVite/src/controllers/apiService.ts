@@ -27,7 +27,7 @@ export const fetchActivities = async (
       userInfo,
     };
 
-    const response = await fetch('https://je-code.com/sep/GPTVite/api/getActivitiesGoogle.php', {
+    const response = await fetch('http://localhost:8738/getActivitiesGoogle.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36,7 +36,8 @@ export const fetchActivities = async (
     });
 
     if (!response.ok) {
-      throw new Error("Erreur lors de la récupération des données de l'API");
+      const errorText = await response.text();
+      throw new Error("Erreur lors de la récuzdv;,ùopmzNFIOLZEHIOMEZFHEIO9PMZpération des données de l'API : " + errorText);
     }
 
     // Étape 1: Obtenir la réponse JSON complète

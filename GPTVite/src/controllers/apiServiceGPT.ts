@@ -6,10 +6,10 @@ interface UserInfo {
 }
 
 export const fetchActivities = async (
-  latitude: number,
-  longitude: number,
-  bounds?: { north: number; south: number; east: number; west: number },
-  userInfo?: UserInfo // Ajout des informations utilisateur en tant que paramètre optionnel
+    latitude: number,
+    longitude: number,
+    bounds?: { north: number; south: number; east: number; west: number },
+    userInfo?: UserInfo
 ): Promise<Activity[] | null> => {
   try {
     if (!bounds) {
@@ -24,10 +24,10 @@ export const fetchActivities = async (
       south: bounds.south,
       east: bounds.east,
       west: bounds.west,
-      userInfo, // Ajout des informations utilisateur dans le corps de la requête
+      userInfo,
     };
 
-    const response = await fetch('https://je-code.com/sep/GPTVite/api/getActivities.php', {
+    const response = await fetch('http://localhost:8738/getActivitiesGoogle.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36,10 +36,16 @@ export const fetchActivities = async (
     });
 
     if (!response.ok) {
-      throw new Error("Erreur lors de la récupération des données de l'API");
+      const errorText = await response.text();
+      throw new Error(`Erreur API : ${response.status} - ${errorText}`);
     }
 
     const data: ApiResponse = await response.json();
+
+    if (!data.activities || !Array.isArray(data.activities)) {
+      console.error("Réponse inattendue de l'API : ", data);
+      return null;
+    }
 
     return data.activities.map((activity) => ({
       ...activity,

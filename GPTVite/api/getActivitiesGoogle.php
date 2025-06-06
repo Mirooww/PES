@@ -7,8 +7,13 @@ error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: *");
+header("Access-Control-Allow-Headers: *");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 require_once('config.php');
 
@@ -33,12 +38,6 @@ $south = $input['south'] ?? null;
 $east = $input['east'] ?? null;
 $west = $input['west'] ?? null;
 
-if (!$userLatitude || !$userLongitude || !$north || !$south || !$east || !$west) {
-    http_response_code(400);
-    echo json_encode(["error" => "Latitude, longitude et les limites de la carte sont requis."]);
-    exit();
-}
-
 $userInfo = $input['userInfo'] ?? [];
 $ability = $userInfo['ability'] ?? "aucune capacité spécifiée";
 $activityPreferences = $userInfo['activityPreferences'] ?? null;
@@ -55,11 +54,18 @@ $prompt = "Génère une liste de 5 activités adaptées pour une personne ayant 
 - 'phone_number' : numéro de téléphone (si disponible)
 Assure-toi que la sortie est uniquement le JSON sans texte supplémentaire.";
 
-// URL de l'API Gemini avec la clé API
+// Clé API Gemini
 $apiKey = $_ENV['GOOGLE_API_KEY'];
+
+if (!$apiKey) {
+    http_response_code(500);
+    echo json_encode(["error" => "Clé API manquante"]);
+    exit();
+}
+
 $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' . $apiKey;
 
-// Construire les données de la requête
+// Construire la requête
 $requestData = [
     "contents" => [
         [
@@ -74,15 +80,14 @@ $requestData = [
 
 // Initialiser cURL
 $ch = curl_init($apiUrl);
-
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json'
 ]);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-// Exécuter la requête
 $response = curl_exec($ch);
 
 if ($response === false) {
@@ -109,31 +114,40 @@ if (isset($apiResponse['error'])) {
     exit();
 }
 
-// Extraire la réponse de l'assistant
-$assistantReply = $apiResponse['contents'][0]['parts'][0]['text'] ?? null;
+$assistantReply = $apiResponse['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
 if (!$assistantReply) {
     http_response_code(500);
-    echo json_encode(["error" => "Réponse inattendue de l'API", "details" => $apiResponse]);
+    echo json_encode(["error" => "Réponse vide ou inattendue de Gemini", "details" => $apiResponse]);
     exit();
 }
 
-$suggestions = json_decode($assistantReply, true);
+// Extraire uniquement le JSON entre les balises ```json ... ``` (si présent)
+if (preg_match('/```json\s*(.*?)\s*```/s', $assistantReply, $matches)) {
+    $jsonBlock = $matches[1];
+} else {
+    // Tentative de fallback : peut-être que Gemini renvoie directement du JSON sans balises
+    $jsonBlock = trim($assistantReply);
+}
+
+$suggestions = json_decode($jsonBlock, true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
     http_response_code(500);
     echo json_encode([
-        "error" => "L'API n'a pas renvoyé un JSON valide.",
-        "details" => $assistantReply
+        "error" => "Le bloc JSON extrait est invalide",
+        "details" => $jsonBlock,
+        "json_last_error" => json_last_error_msg()
     ]);
     exit();
 }
 
 if (!isset($suggestions['activities']) || !is_array($suggestions['activities'])) {
     http_response_code(500);
-    echo json_encode(["error" => "Format des activités invalide.", "details" => $suggestions]);
+    echo json_encode(["error" => "Format des activités invalide", "details" => $suggestions]);
     exit();
 }
 
 echo json_encode($suggestions);
+exit();
 ?>
